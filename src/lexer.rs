@@ -51,7 +51,28 @@ impl Lexer {
         'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
     }
 
+    fn read_number(&mut self) -> String {
+        let position = self.position;
+        while Self::is_digit(&self.ch) {
+            self.read_char();
+        }
+        self.input.get(position..self.position).unwrap().to_string()
+    }
+
+    fn is_digit(ch: &u8) -> bool {
+        let ch = char::from(*ch);
+        '0' <= ch && ch <= '9'
+    }
+
+    fn skip_whitespace(&mut self) {
+        while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
+            self.read_char();
+        }
+    }
+
     fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
+
         let tok;
         match self.ch {
             b'=' => tok = Self::new_token(TokenKind::ASSIGN, self.ch),
@@ -62,7 +83,7 @@ impl Lexer {
             b'+' => tok = Self::new_token(TokenKind::PLUS, self.ch),
             b'{' => tok = Self::new_token(TokenKind::LBRACE, self.ch),
             b'}' => tok = Self::new_token(TokenKind::RBRACE, self.ch),
-            b'0' => {
+            0 => {
                 tok = Token {
                     token_kind: TokenKind::EOF,
                     literal: String::from(""),
@@ -74,6 +95,13 @@ impl Lexer {
                     let tk_kind = lookup_ident(&ident);
                     tok = Token {
                         token_kind: tk_kind,
+                        literal: ident,
+                    };
+                    return tok;
+                } else if Self::is_digit(&self.ch) {
+                    let ident = self.read_number();
+                    tok = Token {
+                        token_kind: TokenKind::INT,
                         literal: ident,
                     };
                     return tok;
@@ -103,8 +131,7 @@ mod tests {
                let add = fn(x, y) {
                  x + y;
             };
-            let result = add(five, ten); 
-            ",
+            let result = add(five, ten);",
         );
         let mut lexer = Lexer::new(input);
 
@@ -133,6 +160,8 @@ mod tests {
             (TokenKind::PLUS, String::from("+")),
             (TokenKind::IDENT, String::from("y")),
             (TokenKind::SEMICOLON, String::from(";")),
+            (TokenKind::RBRACE, String::from("}")),
+            (TokenKind::SEMICOLON, String::from(";")),
             (TokenKind::LET, String::from("let")),
             (TokenKind::IDENT, String::from("result")),
             (TokenKind::ASSIGN, String::from("=")),
@@ -141,13 +170,14 @@ mod tests {
             (TokenKind::IDENT, String::from("five")),
             (TokenKind::COMMA, String::from(",")),
             (TokenKind::IDENT, String::from("ten")),
+            (TokenKind::RPAREN, String::from(")")),
             (TokenKind::SEMICOLON, String::from(";")),
             (TokenKind::EOF, String::from("")),
         ];
 
         for test in tests.iter() {
             let _tok = lexer.next_token();
-            print!("{:?}", _tok);
+            print!("{:?} \n", _tok);
             assert_eq!(_tok.token_kind, test.0);
             assert_eq!(_tok.literal, test.1);
         }

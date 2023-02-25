@@ -1,5 +1,3 @@
-type TokenType = String;
-
 #[derive(Debug)]
 pub struct Token {
     pub token_kind: TokenKind,
@@ -8,35 +6,54 @@ pub struct Token {
 
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
-    ILLEGAL, // ILLEGAL
-    EOF,     // EOF
+    Illegal, // illegal
+    Eof,     // eof
 
     // Identifiers + literals
-    IDENT, // add, foobar, x, y, ...
-    INT,   // 12343456
+    Ident, // add, foobar, x, y, ...
+    Int,   // 12343456
 
     // Operators
-    ASSIGN, // =
-    PLUS,   // +
+    Assign,   // =
+    Plus,     // +
+    Minus,    // -
+    Bang,     // !
+    Asterisk, // *
+    Slash,    // /
+    Lt,       // <
+    Gt,       // >
 
     // Delimiters
-    COMMA,     // ,
-    SEMICOLON, // ;
+    Comma,     // ,
+    Semicolon, // ;
 
-    LPAREN, // (
-    RPAREN, // )
-    LBRACE, // {
-    RBRACE, // }
+    LParen, // (
+    RParen, // )
+    LBrace, // {
+    RBrace, // }
 
     // Keywords
-    FUNCTION, // FUNCTION
-    LET,      // LET
+    Function, // fn
+    Let,      // let
+    True,     // true
+    False,    // false
+    If,       // if
+    Else,     // else
+    Return,   // return
+
+    Eq,    // ==
+    NotEq, // !=
 }
 
 pub fn lookup_ident(ident: &str) -> TokenKind {
     match ident {
-        "fn" => TokenKind::FUNCTION,
-        "let" => TokenKind::LET,
-        _ => TokenKind::IDENT,
+        "fn" => TokenKind::Function,
+        "let" => TokenKind::Let,
+        "true" => TokenKind::True,
+        "false" => TokenKind::False,
+        "if" => TokenKind::If,
+        "else" => TokenKind::Else,
+        "return" => TokenKind::Return,
+        _ => TokenKind::Ident,
     }
 }

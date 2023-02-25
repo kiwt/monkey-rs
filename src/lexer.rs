@@ -1,5 +1,3 @@
-use std::process::id;
-
 use crate::token::{lookup_ident, Token, TokenKind};
 #[derive(PartialEq)]
 pub struct Lexer {
@@ -36,6 +34,13 @@ impl Lexer {
         }
         self.position = self.read_position;
         self.read_position += 1
+    }
+
+    fn peek_char(&mut self) -> u8 {
+        if self.read_position >= self.input.len() {
+            return 0;
+        }
+        self.input.as_bytes()[self.read_position]
     }
 
     fn read_identifier(&mut self) -> String {
@@ -75,17 +80,47 @@ impl Lexer {
 
         let tok;
         match self.ch {
-            b'=' => tok = Self::new_token(TokenKind::ASSIGN, self.ch),
-            b';' => tok = Self::new_token(TokenKind::SEMICOLON, self.ch),
-            b'(' => tok = Self::new_token(TokenKind::LPAREN, self.ch),
-            b')' => tok = Self::new_token(TokenKind::RPAREN, self.ch),
-            b',' => tok = Self::new_token(TokenKind::COMMA, self.ch),
-            b'+' => tok = Self::new_token(TokenKind::PLUS, self.ch),
-            b'{' => tok = Self::new_token(TokenKind::LBRACE, self.ch),
-            b'}' => tok = Self::new_token(TokenKind::RBRACE, self.ch),
+            b'=' => {
+                if self.peek_char() == b'=' {
+                    let current_ch = String::from_utf8(vec![self.ch]).unwrap();
+                    self.read_char();
+                    let next_ch = String::from_utf8(vec![self.ch]).unwrap();
+                    tok = Token {
+                        token_kind: TokenKind::Eq,
+                        literal: format!("{}{}", current_ch, next_ch),
+                    };
+                } else {
+                    tok = Self::new_token(TokenKind::Assign, self.ch);
+                }
+            }
+            b'!' => {
+                if self.peek_char() == b'=' {
+                    let current_ch = String::from_utf8(vec![self.ch]).unwrap();
+                    self.read_char();
+                    let next_ch = String::from_utf8(vec![self.ch]).unwrap();
+                    tok = Token {
+                        token_kind: TokenKind::NotEq,
+                        literal: format!("{}{}", current_ch, next_ch),
+                    };
+                } else {
+                    tok = Self::new_token(TokenKind::Bang, self.ch);
+                }
+            }
+            b'+' => tok = Self::new_token(TokenKind::Plus, self.ch),
+            b'-' => tok = Self::new_token(TokenKind::Minus, self.ch),
+            b'/' => tok = Self::new_token(TokenKind::Slash, self.ch),
+            b'*' => tok = Self::new_token(TokenKind::Asterisk, self.ch),
+            b'<' => tok = Self::new_token(TokenKind::Lt, self.ch),
+            b'>' => tok = Self::new_token(TokenKind::Gt, self.ch),
+            b';' => tok = Self::new_token(TokenKind::Semicolon, self.ch),
+            b'(' => tok = Self::new_token(TokenKind::LParen, self.ch),
+            b')' => tok = Self::new_token(TokenKind::RParen, self.ch),
+            b',' => tok = Self::new_token(TokenKind::Comma, self.ch),
+            b'{' => tok = Self::new_token(TokenKind::LBrace, self.ch),
+            b'}' => tok = Self::new_token(TokenKind::RBrace, self.ch),
             0 => {
                 tok = Token {
-                    token_kind: TokenKind::EOF,
+                    token_kind: TokenKind::Eof,
                     literal: String::from(""),
                 };
             }
@@ -101,13 +136,13 @@ impl Lexer {
                 } else if Self::is_digit(&self.ch) {
                     let ident = self.read_number();
                     tok = Token {
-                        token_kind: TokenKind::INT,
+                        token_kind: TokenKind::Int,
                         literal: ident,
                     };
                     return tok;
                 } else {
                     tok = Token {
-                        token_kind: TokenKind::ILLEGAL,
+                        token_kind: TokenKind::Illegal,
                         literal: String::from(""),
                     };
                 }
@@ -131,48 +166,97 @@ mod tests {
                let add = fn(x, y) {
                  x + y;
             };
-            let result = add(five, ten);",
+            let result = add(five, ten);
+            !-/*5;
+            5 < 10 > 5;
+
+            if (5 < 10) {
+                return true;
+            } else {
+                return false;
+            }
+
+            10 == 10;
+            10 != 9;
+            ",
         );
         let mut lexer = Lexer::new(input);
 
         let tests = vec![
-            (TokenKind::LET, String::from("let")),
-            (TokenKind::IDENT, String::from("five")),
-            (TokenKind::ASSIGN, String::from("=")),
-            (TokenKind::INT, String::from("5")),
-            (TokenKind::SEMICOLON, String::from(";")),
-            (TokenKind::LET, String::from("let")),
-            (TokenKind::IDENT, String::from("ten")),
-            (TokenKind::ASSIGN, String::from("=")),
-            (TokenKind::INT, String::from("10")),
-            (TokenKind::SEMICOLON, String::from(";")),
-            (TokenKind::LET, String::from("let")),
-            (TokenKind::IDENT, String::from("add")),
-            (TokenKind::ASSIGN, String::from("=")),
-            (TokenKind::FUNCTION, String::from("fn")),
-            (TokenKind::LPAREN, String::from("(")),
-            (TokenKind::IDENT, String::from("x")),
-            (TokenKind::COMMA, String::from(",")),
-            (TokenKind::IDENT, String::from("y")),
-            (TokenKind::RPAREN, String::from(")")),
-            (TokenKind::LBRACE, String::from("{")),
-            (TokenKind::IDENT, String::from("x")),
-            (TokenKind::PLUS, String::from("+")),
-            (TokenKind::IDENT, String::from("y")),
-            (TokenKind::SEMICOLON, String::from(";")),
-            (TokenKind::RBRACE, String::from("}")),
-            (TokenKind::SEMICOLON, String::from(";")),
-            (TokenKind::LET, String::from("let")),
-            (TokenKind::IDENT, String::from("result")),
-            (TokenKind::ASSIGN, String::from("=")),
-            (TokenKind::IDENT, String::from("add")),
-            (TokenKind::LPAREN, String::from("(")),
-            (TokenKind::IDENT, String::from("five")),
-            (TokenKind::COMMA, String::from(",")),
-            (TokenKind::IDENT, String::from("ten")),
-            (TokenKind::RPAREN, String::from(")")),
-            (TokenKind::SEMICOLON, String::from(";")),
-            (TokenKind::EOF, String::from("")),
+            (TokenKind::Let, String::from("let")),
+            (TokenKind::Ident, String::from("five")),
+            (TokenKind::Assign, String::from("=")),
+            (TokenKind::Int, String::from("5")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Let, String::from("let")),
+            (TokenKind::Ident, String::from("ten")),
+            (TokenKind::Assign, String::from("=")),
+            (TokenKind::Int, String::from("10")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Let, String::from("let")),
+            (TokenKind::Ident, String::from("add")),
+            (TokenKind::Assign, String::from("=")),
+            (TokenKind::Function, String::from("fn")),
+            (TokenKind::LParen, String::from("(")),
+            (TokenKind::Ident, String::from("x")),
+            (TokenKind::Comma, String::from(",")),
+            (TokenKind::Ident, String::from("y")),
+            (TokenKind::RParen, String::from(")")),
+            (TokenKind::LBrace, String::from("{")),
+            (TokenKind::Ident, String::from("x")),
+            (TokenKind::Plus, String::from("+")),
+            (TokenKind::Ident, String::from("y")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::RBrace, String::from("}")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Let, String::from("let")),
+            (TokenKind::Ident, String::from("result")),
+            (TokenKind::Assign, String::from("=")),
+            (TokenKind::Ident, String::from("add")),
+            (TokenKind::LParen, String::from("(")),
+            (TokenKind::Ident, String::from("five")),
+            (TokenKind::Comma, String::from(",")),
+            (TokenKind::Ident, String::from("ten")),
+            (TokenKind::RParen, String::from(")")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Bang, String::from("!")),
+            (TokenKind::Minus, String::from("-")),
+            (TokenKind::Slash, String::from("/")),
+            (TokenKind::Asterisk, String::from("*")),
+            (TokenKind::Int, String::from("5")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Int, String::from("5")),
+            (TokenKind::Lt, String::from("<")),
+            (TokenKind::Int, String::from("10")),
+            (TokenKind::Gt, String::from(">")),
+            (TokenKind::Int, String::from("5")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::If, String::from("if")),
+            (TokenKind::LParen, String::from("(")),
+            (TokenKind::Int, String::from("5")),
+            (TokenKind::Lt, String::from("<")),
+            (TokenKind::Int, String::from("10")),
+            (TokenKind::RParen, String::from(")")),
+            (TokenKind::LBrace, String::from("{")),
+            (TokenKind::Return, String::from("return")),
+            (TokenKind::True, String::from("true")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::RBrace, String::from("}")),
+            (TokenKind::Else, String::from("else")),
+            (TokenKind::LBrace, String::from("{")),
+            (TokenKind::Return, String::from("return")),
+            (TokenKind::False, String::from("false")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::RBrace, String::from("}")),
+            (TokenKind::Int, String::from("10")),
+            (TokenKind::Eq, String::from("==")),
+            (TokenKind::Int, String::from("10")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Int, String::from("10")),
+            (TokenKind::NotEq, String::from("!=")),
+            (TokenKind::Int, String::from("9")),
+            (TokenKind::Semicolon, String::from(";")),
+            (TokenKind::Eof, String::from("")),
         ];
 
         for test in tests.iter() {

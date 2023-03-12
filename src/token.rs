@@ -1,10 +1,10 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub token_kind: TokenKind,
     pub literal: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     Illegal, // illegal
     Eof,     // eof
@@ -43,6 +43,8 @@ pub enum TokenKind {
 
     Eq,    // ==
     NotEq, // !=
+
+    Default,
 }
 
 pub fn lookup_ident(ident: &str) -> TokenKind {

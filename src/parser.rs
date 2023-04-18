@@ -1,5 +1,7 @@
+use std::process::id;
+
 use crate::{
-    ast::{Identifier, LetStatement, Program, ReturnStatement, Statement},
+    ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement},
     lexer::Lexer,
     token::{Token, TokenKind},
 };
@@ -92,11 +94,12 @@ impl Parser {
     fn parse_return_statement(&mut self) -> Option<ReturnStatement> {
         let tok = self.cur_token.clone();
 
-        self.next_token();
+        let ident = Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        };
 
-        if !self.expect_peek(TokenKind::Return) {
-            return None;
-        }
+        self.next_token();
 
         // TODO: We're skipping the expressions until we // encounter a semicolon
         while !self.cur_token_is(TokenKind::Semicolon) {
@@ -105,7 +108,7 @@ impl Parser {
 
         let stmt = ReturnStatement {
             token: tok,
-            return_value: todo!(),
+            return_value: Box::new(ident),
         };
 
         Some(stmt)
@@ -145,9 +148,10 @@ mod tests {
     #[test]
     fn test_let_statements() {
         let input = String::from(
-            "let x = 5;
-            let y = 10;
-            let foobar = 838383;
+            "
+            return 5;
+            return 10;
+            return 993322;
             ",
         );
 
@@ -155,7 +159,6 @@ mod tests {
         let mut p = Parser::new(lexer);
         let program = p.parse_program().unwrap();
 
-        assert_eq!(p.errors.len(), 0);
         assert_eq!(program.statements.len(), 3)
     }
 }

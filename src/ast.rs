@@ -93,7 +93,7 @@ pub struct ReturnStatement {
     pub return_value: Box<dyn Expression>,
 }
 
-impl ReturnStatement {}
+// impl ReturnStatement {}
 
 impl Statement for ReturnStatement {
     fn statement_node(&self) {}
@@ -126,7 +126,7 @@ pub struct ExpressionStatement {
     pub expression: Box<dyn Expression>,
 }
 
-impl ExpressionStatement {}
+// impl ExpressionStatement {}
 
 impl Statement for ExpressionStatement {
     fn statement_node(&self) {}

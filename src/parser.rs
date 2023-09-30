@@ -1,10 +1,16 @@
-use std::process::id;
-
 use crate::{
-    ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement},
+    ast::{
+        Expression, ExpressionStatement, Identifier, LetStatement, Program, ReturnStatement,
+        Statement,
+    },
     lexer::Lexer,
+    parser::Precedence::Lowest,
     token::{Token, TokenKind},
 };
+
+pub enum Precedence {
+    Lowest,
+}
 
 pub struct Parser {
     l: Lexer,
@@ -61,6 +67,23 @@ impl Parser {
         }
     }
 
+    fn parse_expression_statement(&mut self) -> Option<ExpressionStatement> {
+        let tok = self.cur_token.clone();
+
+        let exp = self.parse_expression(Lowest).unwrap();
+
+        let stmt = ExpressionStatement {
+            token: tok,
+            expression: exp,
+        };
+
+        Some(stmt)
+    }
+
+    fn parse_expression(&mut self, p: Precedence) -> Option<Box<dyn Expression>> {
+        None
+    }
+
     fn parse_let_statement(&mut self) -> Option<LetStatement> {
         let tok = self.cur_token.clone();
 
@@ -83,9 +106,12 @@ impl Parser {
             self.next_token();
         }
 
+        let val = self.parse_expression(Lowest).unwrap();
+
         let stmt = LetStatement {
             token: tok,
             name: ident,
+            value: val,
         };
 
         Some(stmt)
